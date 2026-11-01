@@ -6,7 +6,7 @@ command into a structured action -> executed through standard Android intents
 the Google app / Gemini as English text (best effort; Google exposes no public Assistant API).
 
 ## Setup
-1. Open this folder in Android Studio (Koala+), let it sync.
+1. Open this folder in a recent Android Studio, let it sync.
 2. Add to `local.properties`: `ANTHROPIC_API_KEY=sk-ant-...`
 3. Run on a device (needs Google speech services and internet for the first translation-model download).
 
