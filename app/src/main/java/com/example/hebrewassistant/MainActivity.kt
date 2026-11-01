@@ -29,23 +29,27 @@ class MainActivity : ComponentActivity() {
             MaterialTheme {
                 var hebrew by remember { mutableStateOf("") }
                 var english by remember { mutableStateOf("") }
+                var typed by remember { mutableStateOf("") }
                 var status by remember { mutableStateOf("Tap the mic and speak Hebrew") }
                 val scope = rememberCoroutineScope()
+
+                // Shared by voice and typed input: translate, parse with Claude, run the action.
+                fun process(heb: String) {
+                    hebrew = heb
+                    status = "Understanding…"
+                    scope.launch {
+                        status = runCatching {
+                            english = translator.toEnglish(heb)
+                            executor.execute(parser.parse(heb, english))
+                        }.getOrElse { "Error: ${it.message}" }
+                    }
+                }
 
                 fun startListening() {
                     status = "Listening…"
                     speech.listen(
                         onPartial = { hebrew = it },
-                        onResult = { heb ->
-                            hebrew = heb
-                            status = "Understanding…"
-                            scope.launch {
-                                status = runCatching {
-                                    english = translator.toEnglish(heb)
-                                    executor.execute(parser.parse(heb, english))
-                                }.getOrElse { "Error: ${it.message}" }
-                            }
-                        },
+                        onResult = { process(it) },
                         onError = { status = "Speech error $it" },
                     )
                 }
@@ -66,6 +70,19 @@ class MainActivity : ComponentActivity() {
                     Text(status)
                     Spacer(Modifier.height(24.dp))
                     Button(onClick = { permission.launch(Manifest.permission.RECORD_AUDIO) }) { Text("🎤 Speak") }
+                    Spacer(Modifier.height(24.dp))
+                    // Typed input for testing without a microphone (e.g. on the emulator).
+                    OutlinedTextField(
+                        value = typed,
+                        onValueChange = { typed = it },
+                        label = { Text("Or type a command (Hebrew)") },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Button(
+                        onClick = { process(typed.trim()) },
+                        enabled = typed.isNotBlank(),
+                    ) { Text("Send") }
                 }
             }
         }
